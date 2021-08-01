@@ -11,6 +11,7 @@ using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Tga;
 using SixLabors.ImageSharp.Formats.Tiff;
+using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.IO;
 using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.Processing;
@@ -192,7 +193,8 @@ namespace SixLabors.ImageSharp
                 new GifConfigurationModule(),
                 new BmpConfigurationModule(),
                 new TgaConfigurationModule(),
-                new TiffConfigurationModule());
+                new TiffConfigurationModule(),
+                new WebpConfigurationModule());
         }
     }
 }

@@ -23,7 +23,7 @@ namespace SixLabors.ImageSharp.Formats.Webp.Lossy
         /// <param name="segmentHeader">The segment header.</param>
         /// <param name="probabilities">The probabilities.</param>
         /// <param name="memoryAllocator">Used for allocating memory for the pixel data output and the temporary buffers.</param>
-        public Vp8Decoder(Vp8FrameHeader frameHeader, Vp8PictureHeader pictureHeader, Vp8SegmentHeader segmentHeader, Vp8Proba probabilities, MemoryAllocator memoryAllocator)
+        public Vp8Decoder(IVp8FrameHeader frameHeader, Vp8PictureHeader pictureHeader, Vp8SegmentHeader segmentHeader, Vp8Proba probabilities, MemoryAllocator memoryAllocator)
         {
             this.FilterHeader = new Vp8FilterHeader();
             this.FrameHeader = frameHeader;
@@ -87,7 +87,7 @@ namespace SixLabors.ImageSharp.Formats.Webp.Lossy
         /// <summary>
         /// Gets the frame header.
         /// </summary>
-        public Vp8FrameHeader FrameHeader { get; }
+        public IVp8FrameHeader FrameHeader { get; }
 
         /// <summary>
         /// Gets the picture header.

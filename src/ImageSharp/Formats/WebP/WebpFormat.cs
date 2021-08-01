@@ -8,7 +8,7 @@ namespace SixLabors.ImageSharp.Formats.Webp
     /// <summary>
     /// Registers the image encoders, decoders and mime type detectors for the Webp format
     /// </summary>
-    public sealed class WebpFormat : IImageFormat<WebpMetadata>
+    public sealed class WebpFormat : IImageFormat<WebpMetadata, WebpFrameMetadata>
     {
         private WebpFormat()
         {
@@ -30,6 +30,9 @@ namespace SixLabors.ImageSharp.Formats.Webp
 
         /// <inheritdoc/>
         public IEnumerable<string> FileExtensions => WebpConstants.FileExtensions;
+
+        /// <inheritdoc/>
+        public WebpFrameMetadata CreateDefaultFormatFrameMetadata() => new WebpFrameMetadata();
 
         /// <inheritdoc/>
         public WebpMetadata CreateDefaultFormatMetadata() => new WebpMetadata();

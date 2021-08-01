@@ -5,7 +5,6 @@ using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
 using SixLabors.ImageSharp.Formats.Webp.BitReader;
 using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
@@ -48,7 +47,7 @@ namespace SixLabors.ImageSharp.Formats.Webp.Lossy
             this.configuration = configuration;
         }
 
-        public void Decode<TPixel>(Buffer2D<TPixel> pixels, int width, int height, WebpImageInfo info)
+        public void Decode<TPixel>(Buffer2D<TPixel> pixels, int width, int height, Vp8FrameInfo info, FrameAlphaInfo alphaInfo, FrameAnimationInfo<TPixel> animationInfo)
             where TPixel : unmanaged, IPixel<TPixel>
         {
             // Paragraph 9.2: color space and clamp type follow.
@@ -68,7 +67,7 @@ namespace SixLabors.ImageSharp.Formats.Webp.Lossy
             var proba = new Vp8Proba();
             Vp8SegmentHeader vp8SegmentHeader = this.ParseSegmentHeader(proba);
 
-            using (var decoder = new Vp8Decoder(info.Vp8FrameHeader, pictureHeader, vp8SegmentHeader, proba, this.memoryAllocator))
+            using (var decoder = new Vp8Decoder(info, pictureHeader, vp8SegmentHeader, proba, this.memoryAllocator))
             {
                 Vp8Io io = InitializeVp8Io(decoder, pictureHeader);
 
@@ -91,18 +90,18 @@ namespace SixLabors.ImageSharp.Formats.Webp.Lossy
                 // Decode image data.
                 this.ParseFrame(decoder, io);
 
-                if (info.Features?.Alpha == true)
+                if (alphaInfo != null)
                 {
                     using (var alphaDecoder = new AlphaDecoder(
                         width,
                         height,
-                        info.Features.AlphaData,
-                        info.Features.AlphaChunkHeader,
+                        alphaInfo.AlphaData,
+                        alphaInfo.AlphaChunkHeader,
                         this.memoryAllocator,
                         this.configuration))
                     {
                         alphaDecoder.Decode();
-                        this.DecodePixelValues(width, height, decoder.Pixels.Memory.Span, pixels, alphaDecoder.Alpha);
+                        this.DecodePixelValues(width, height, decoder.Pixels.Memory.Span, pixels, animationInfo, alphaDecoder.Alpha);
                     }
                 }
                 else
@@ -118,6 +117,7 @@ namespace SixLabors.ImageSharp.Formats.Webp.Lossy
             int widthMul3 = width * 3;
             for (int y = 0; y < height; y++)
             {
+                // TODO animation alpha blending, background, and pixels from outside clip (can lossless have clipped frames?)
                 Span<byte> row = pixelData.Slice(y * widthMul3, widthMul3);
                 Span<TPixel> decodedPixelRow = decodedPixels.GetRowSpan(y);
                 PixelOperations<TPixel>.Instance.FromBgr24Bytes(
@@ -128,22 +128,54 @@ namespace SixLabors.ImageSharp.Formats.Webp.Lossy
             }
         }
 
-        private void DecodePixelValues<TPixel>(int width, int height, Span<byte> pixelData, Buffer2D<TPixel> decodedPixels, IMemoryOwner<byte> alpha)
+        private void DecodePixelValues<TPixel>(int width, int height, Span<byte> pixelData, Buffer2D<TPixel> decodedPixels, FrameAnimationInfo<TPixel> animationInfo, IMemoryOwner<byte> alphaData)
             where TPixel : unmanaged, IPixel<TPixel>
         {
-            TPixel color = default;
-            Span<byte> alphaSpan = alpha.Memory.Span;
+            Span<byte> alphaSpan = alphaData.Memory.Span;
             Span<Bgr24> pixelsBgr = MemoryMarshal.Cast<byte, Bgr24>(pixelData);
+            Rgba32 prevRgb = default;
+            Rectangle clip = animationInfo == null ? new Rectangle(0, 0, width, height) : animationInfo.GetClip();
             for (int y = 0; y < height; y++)
             {
-                int yMulWidth = y * width;
+                int rowStartOffset = (y - clip.Top) * clip.Width;
+
                 Span<TPixel> decodedPixelRow = decodedPixels.GetRowSpan(y);
+                Span<TPixel> previousRow = animationInfo != null && animationInfo.PreviousFrame != null ? animationInfo.PreviousFrame.PixelBuffer.GetRowSpan(y) : null;
                 for (int x = 0; x < width; x++)
                 {
-                    int offset = yMulWidth + x;
+                    if (!clip.Contains(x, y))
+                    {
+                        previousRow[x].ToRgba32(ref prevRgb);
+                        decodedPixelRow[x].FromBgra32(new Bgra32(prevRgb.R, prevRgb.G, prevRgb.B, byte.MaxValue));
+                        continue;
+                    }
+
+                    int offset = rowStartOffset + x - clip.Left;
                     Bgr24 bgr = pixelsBgr[offset];
-                    color.FromBgra32(new Bgra32(bgr.R, bgr.G, bgr.B, alphaSpan[offset]));
-                    decodedPixelRow[x] = color;
+                    byte alpha = alphaSpan[offset];
+
+                    if (animationInfo?.AlphaBlend == false || alpha == byte.MaxValue || previousRow == null)
+                    {
+                        decodedPixelRow[x].FromBgra32(new Bgra32(bgr.R, bgr.G, bgr.B, alpha));
+                        continue;
+                    }
+
+                    previousRow[x].ToRgba32(ref prevRgb);
+                    byte alphaBlend = (byte)(alpha + (prevRgb.A * (byte.MaxValue - alpha) / byte.MaxValue));
+
+                    // TODO consider ICCP?
+                    if (alphaBlend != 0)
+                    {
+                        bgr.B = (byte)(((bgr.B * alpha) + (prevRgb.B * prevRgb.A * (byte.MaxValue - alpha) / byte.MaxValue)) / alphaBlend);
+                        bgr.G = (byte)(((bgr.G * alpha) + (prevRgb.G * prevRgb.A * (byte.MaxValue - alpha) / byte.MaxValue)) / alphaBlend);
+                        bgr.R = (byte)(((bgr.R * alpha) + (prevRgb.R * prevRgb.A * (byte.MaxValue - alpha) / byte.MaxValue)) / alphaBlend);
+                    }
+                    else
+                    {
+                        bgr = default; // TODO works, but seems questionable
+                    }
+
+                    decodedPixelRow[x].FromBgra32(new Bgra32(bgr.R, bgr.G, bgr.B, alphaBlend));
                 }
             }
         }

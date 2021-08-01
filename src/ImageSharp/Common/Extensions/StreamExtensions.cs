@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.IO;
 
 namespace SixLabors.ImageSharp
@@ -69,6 +70,38 @@ namespace SixLabors.ImageSharp
             {
                 ArrayPool<byte>.Shared.Return(buffer);
             }
+        }
+
+        public static uint ReadUint24(this Stream stream, byte[] buffer)
+        {
+            if (buffer.Length < 4)
+            {
+                throw new ArgumentException();
+            }
+
+            if (stream.Read(buffer, 0, 3) != 3)
+            {
+                throw new EndOfStreamException();
+            }
+
+            buffer[3] = 0;
+
+            return BinaryPrimitives.ReadUInt32LittleEndian(buffer);
+        }
+
+        public static uint ReadUint32(this Stream stream, byte[] buffer)
+        {
+            if (buffer.Length < 4)
+            {
+                throw new ArgumentException();
+            }
+
+            if (stream.Read(buffer, 0, 4) != 4)
+            {
+                throw new ImageFormatException("Unexpected end of stream");
+            }
+
+            return BinaryPrimitives.ReadUInt32LittleEndian(buffer);
         }
 
 #if !SUPPORTS_SPAN_STREAM

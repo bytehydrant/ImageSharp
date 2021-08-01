@@ -12,7 +12,7 @@
     <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
     <PackageTags>Image Resize Crop Gif Jpg Jpeg Bitmap Png Tga NetCore</PackageTags>
     <Description>A new, fully featured, fully managed, cross-platform, 2D graphics API for .NET</Description>
-    <Configurations>Debug;Release;Debug-InnerLoop;Release-InnerLoop</Configurations>
+    <Configurations>Debug;Release;Debug-InnerLoop;Release-InnerLoop;Debug-InnerLoop50</Configurations>
   </PropertyGroup>
 
   <Choose>
@@ -24,6 +24,11 @@
     <When Condition="$(Configuration.EndsWith('InnerLoop')) == true">
       <PropertyGroup>
         <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(Configuration.EndsWith('InnerLoop50')) == true">
+      <PropertyGroup>
+        <TargetFrameworks>net5.0</TargetFrameworks>
       </PropertyGroup>
     </When>
     <Otherwise>

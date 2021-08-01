@@ -42,6 +42,11 @@ namespace SixLabors.ImageSharp.Formats.Webp
         /// </summary>
         public bool Animated { get; set; }
 
+        /// <summary>
+        /// Gets or sets the LoopCount
+        /// </summary>
+        public int LoopCount { get; set; }
+
         /// <inheritdoc/>
         public IDeepCloneable DeepClone() => new WebpMetadata(this);
     }

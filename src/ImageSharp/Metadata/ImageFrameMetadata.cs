@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Metadata.Animation;
 using SixLabors.ImageSharp.Metadata.Profiles.Exif;
 using SixLabors.ImageSharp.Metadata.Profiles.Icc;
 using SixLabors.ImageSharp.Metadata.Profiles.Iptc;
@@ -92,5 +94,14 @@ namespace SixLabors.ImageSharp.Metadata
             this.formatMetadata[key] = newMeta;
             return newMeta;
         }
+
+        /// <summary>
+        /// Gets all metadata objects that implement <see cref="IAnimationFrameMetadata"/>
+        /// </summary>
+        /// <returns>The metadata objects</returns>
+        public IEnumerable<IAnimationFrameMetadata> GetAnimationFrameMetadata() =>
+            this.formatMetadata
+            .Where(fm => fm.Value is IAnimationFrameMetadata)
+            .Select(fm => fm.Value as IAnimationFrameMetadata);
     }
 }

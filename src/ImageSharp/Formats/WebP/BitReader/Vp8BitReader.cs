@@ -184,11 +184,10 @@ namespace SixLabors.ImageSharp.Formats.Webp.BitReader
         {
             if (this.pos < this.bufferMax)
             {
-                ulong inBits = BinaryPrimitives.ReadUInt64LittleEndian(this.Data.Memory.Span.Slice((int)this.pos, 8));
+                ulong inBits = BinaryPrimitives.ReadUInt64BigEndian(this.Data.Memory.Span.Slice((int)this.pos, 8));
                 this.pos += BitsCount >> 3;
-                ulong bits = this.ByteSwap64(inBits);
-                bits >>= 64 - BitsCount;
-                this.value = bits | (this.value << BitsCount);
+                inBits >>= 64 - BitsCount;
+                this.value = inBits | (this.value << BitsCount);
                 this.bits += BitsCount;
             }
             else

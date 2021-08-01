@@ -1,12 +1,15 @@
 // Copyright (c) Six Labors.
 // Licensed under the Apache License, Version 2.0.
 
+using System;
+using SixLabors.ImageSharp.Metadata.Animation;
+
 namespace SixLabors.ImageSharp.Formats.Gif
 {
     /// <summary>
     /// Provides Gif specific metadata information for the image frame.
     /// </summary>
-    public class GifFrameMetadata : IDeepCloneable
+    public class GifFrameMetadata : IDeepCloneable, IAnimationFrameMetadata
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="GifFrameMetadata"/> class.
@@ -47,6 +50,8 @@ namespace SixLabors.ImageSharp.Formats.Gif
         /// be treated after being displayed.
         /// </summary>
         public GifDisposalMethod DisposalMethod { get; set; }
+
+        public TimeSpan FrameDuration => TimeSpan.FromMilliseconds(this.FrameDelay * 10);
 
         /// <inheritdoc/>
         public IDeepCloneable DeepClone() => new GifFrameMetadata(this);

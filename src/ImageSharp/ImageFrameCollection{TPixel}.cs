@@ -309,6 +309,24 @@ namespace SixLabors.ImageSharp
             return frame;
         }
 
+        /// <summary>
+        /// .
+        /// </summary>
+        /// <param name="width">.</param>
+        /// <param name="height">.</param>
+        /// <returns>.</returns>
+        public ImageFrame<TPixel> CreateFrame(int width, int height)
+        {
+            this.EnsureNotDisposed();
+
+            var frame = new ImageFrame<TPixel>(
+                this.parent.GetConfiguration(),
+                width,
+                height);
+            this.frames.Add(frame);
+            return frame;
+        }
+
         /// <inheritdoc />
         protected override IEnumerator<ImageFrame> NonGenericGetEnumerator() => this.frames.GetEnumerator();
 
