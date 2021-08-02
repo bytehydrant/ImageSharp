@@ -253,7 +253,7 @@ namespace SixLabors.ImageSharp.Formats.Webp
                 WebpThrowHelper.ThrowImageFormatException("Expected ANIM chunk");
             }
 
-            this.currentStream.Skip(4); // TODO background color, note, spec says this is optional
+            this.currentStream.Skip(4); // TODO background color, note, spec says this is optional, so low pri
             this.currentStream.Read(this.buffer, 0, 2);
             uint loopCount = BinaryPrimitives.ReadUInt16LittleEndian(this.buffer);
             this.Metadata.GetWebpMetadata().LoopCount = (int)loopCount;
